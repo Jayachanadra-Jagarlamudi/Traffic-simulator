@@ -13,8 +13,8 @@ def generate_dynamic_gif(sim, steps, filename="traffic_simulation.gif"):
     """
     
     # 1. Setup the figure and multi-panel layout (similar to image_0.png structure)
-    fig = plt.figure(figsize=(16, 10))
-    gs = GridSpec(2, 1, height_ratios=[1, 10]) # Top for phase indicator, bottom for graph
+    fig = plt.figure(figsize=(20, 16))
+    gs = GridSpec(2, 1, height_ratios=[1, 12]) # Top for phase indicator, bottom for graph
     
     # Text Axis (Shows current phase/time)
     ax_text = fig.add_subplot(gs[0])
@@ -55,6 +55,20 @@ def generate_dynamic_gif(sim, steps, filename="traffic_simulation.gif"):
         else:
             sim.step_transport(current_time)
 
+
+        # 2. Draw Nodes
+        for n_id, pos in node_positions.items():
+            if sim.nodes[n_id].lambda_rate != 0.0:
+                node_color = 'lightgreen'
+            elif sim.nodes[n_id].is_sink:
+                node_color = 'red'
+            else:
+                node_color = 'lightblue'
+
+            circle = plt.Circle(pos, 0.3, color=node_color, ec='black', lw=2, zorder=1)
+            ax.add_patch(circle)
+            ax.text(pos[0], pos[1], n_id, ha='center', va='center', fontweight='bold', fontsize=14)
+
         # 1. Draw Directional Edges (Arrows)
         for edge in sim.edges:
             start_pos = np.array(node_positions[edge.start_node.node_addr])
@@ -69,20 +83,13 @@ def generate_dynamic_gif(sim, steps, filename="traffic_simulation.gif"):
                 mutation_scale=20,            # Size of the arrow head
                 linewidth=2,
                 color='gray',
-                alpha=0.3,
-                zorder=1,                     # Below vehicles and nodes
+                alpha=0.7,
+                zorder=3,                     # Below vehicles and nodes
                 shrinkA=15,                   # Shrink start point away from node center
                 shrinkB=15                    # Shrink end point so head is visible
             )
             ax.add_patch(arrow)
-
-        # 2. Draw Nodes
-        for n_id, pos in node_positions.items():
-            node_color = 'skyblue' if not sim.nodes[n_id].is_sink else 'lightgreen'
-            circle = plt.Circle(pos, 0.3, color=node_color, ec='black', lw=2, zorder=3)
-            ax.add_patch(circle)
-            ax.text(pos[0], pos[1], n_id, ha='center', va='center', fontweight='bold', fontsize=14)
-
+            
         # 3. Draw Vehicles (and update arrows during Transport)
         # Vehicles in Nodes' queues (small squares)
         for n_id, node in sim.nodes.items():
@@ -146,27 +153,62 @@ def generate_dynamic_gif(sim, steps, filename="traffic_simulation.gif"):
     
 # Initialize Graph
 sim = TrafficGraph()
-sim.add_node(1.1, pos=(2,0), lambda_rate=0.0, is_sink=1) 
-sim.add_node(1.2, pos=(1,0), lambda_rate=0.7, is_sink=0) 
-sim.add_node(1.3, pos=(0,0), lambda_rate=0.0, is_sink=1) 
-sim.add_node(2.1, pos=(1,1), lambda_rate=0.0, is_sink=0) 
-sim.add_node(2.2, pos=(2,1), lambda_rate=0.0, is_sink=0) 
-sim.add_node(2.3, pos=(0,1), lambda_rate=0.0, is_sink=0) 
-sim.add_node(3.1, pos=(1,2), lambda_rate=0.8, is_sink=0) 
-sim.add_node(3.2, pos=(2,2), lambda_rate=0.0, is_sink=0) 
-sim.add_node(3.3, pos=(0,2), lambda_rate=0.0, is_sink=1) 
+sim.add_node('S1', pos=(0,5), lambda_rate=0.5, is_sink=0) 
+sim.add_node('S4', pos=(0,4), lambda_rate=0.5, is_sink=0) 
+sim.add_node('S2', pos=(0,3), lambda_rate=0.5, is_sink=0) 
+sim.add_node('S5', pos=(0,2), lambda_rate=0.5, is_sink=0) 
+sim.add_node('K3', pos=(0,1), lambda_rate=0.0, is_sink=1) 
+sim.add_node('K4', pos=(0,0), lambda_rate=0.0, is_sink=1)
+
+sim.add_node('K2', pos=(3,4), lambda_rate=0.0, is_sink=1) 
+sim.add_node('S3', pos=(3,2), lambda_rate=0.5, is_sink=0) 
+sim.add_node('K1', pos=(3,1), lambda_rate=0.0, is_sink=1) 
+sim.add_node('K5', pos=(3,0), lambda_rate=0.0, is_sink=1) 
+
+sim.add_node('J1', pos=(1,0), lambda_rate=0.0, is_sink=0)
+sim.add_node('J2', pos=(1,2), lambda_rate=0.0, is_sink=0)
+sim.add_node('J3', pos=(1,4), lambda_rate=0.0, is_sink=0)
+sim.add_node('J11', pos=(2,0), lambda_rate=0.0, is_sink=0)
+sim.add_node('J12', pos=(2,2), lambda_rate=0.0, is_sink=0)
+sim.add_node('J13', pos=(2,4), lambda_rate=0.0, is_sink=0)
 
 # Add Edges
-e1 = sim.add_edge(1.1, 2.1, capacity=1)
-e2 = sim.add_edge(1.2, 2.1, capacity=1)
-e3 = sim.add_edge(2.1, 1.3, capacity=1)
-e4 = sim.add_edge(2.1, 3.1, capacity=2)
-e5 = sim.add_edge(2.3, 2.1, capacity=2)
-e6 = sim.add_edge(2.2, 1.1, capacity=1)
-e7 = sim.add_edge(3.3, 2.3, capacity=1)
-e8 = sim.add_edge(3.2, 2.2, capacity=1)
-e9 = sim.add_edge(3.1, 3.2, capacity=1)
-e10 = sim.add_edge(3.1, 3.3, capacity=1)
+e1 = sim.add_edge('K4', 'J1', capacity=2)
+e2 = sim.add_edge('K3', 'J1', capacity=2)
+e3 = sim.add_edge('S2', 'J2', capacity=2)
+e4 = sim.add_edge('S5', 'J2', capacity=2)
+e5 = sim.add_edge('S1', 'J3', capacity=2)
+e6 = sim.add_edge('S4', 'J3', capacity=2)
+e7 = sim.add_edge('J1', 'K4', capacity=2)
+e8 = sim.add_edge('J1', 'K3', capacity=2)
+e9 = sim.add_edge('J2', 'S2', capacity=2)
+e10 = sim.add_edge('J2', 'S5', capacity=2)
+e11 = sim.add_edge('J3', 'S1', capacity=2)
+e12 = sim.add_edge('J3', 'S4', capacity=2)
+
+ej1 = sim.add_edge('J1', 'J11', capacity=4)
+ej2 = sim.add_edge('J2', 'J12', capacity=4)
+ej3 = sim.add_edge('J3', 'J13', capacity=4)
+ej4 = sim.add_edge('J11', 'J1', capacity=4)
+ej5 = sim.add_edge('J12', 'J2', capacity=4)
+ej6 = sim.add_edge('J13', 'J3', capacity=4)
+ej7 = sim.add_edge('J1', 'J2', capacity=4)
+ej8 = sim.add_edge('J2', 'J1', capacity=4)
+ej9 = sim.add_edge('J2', 'J3', capacity=4)
+ej10 = sim.add_edge('J3', 'J2', capacity=4)
+ej11 = sim.add_edge('J11', 'J12', capacity=4)
+ej12 = sim.add_edge('J12', 'J11', capacity=4)
+ej13 = sim.add_edge('J12', 'J13', capacity=4)
+ej14 = sim.add_edge('J13', 'J12', capacity=4)
+
+e13 = sim.add_edge('J11', 'K1', capacity=2)
+e14 = sim.add_edge('J11', 'K5', capacity=2)
+e15 = sim.add_edge('J12', 'S3', capacity=2)
+e16 = sim.add_edge('J13', 'K2', capacity=2)
+e17 = sim.add_edge('K1', 'J11', capacity=2)
+e18 = sim.add_edge('K5', 'J11', capacity=2)
+e19 = sim.add_edge('S3', 'J12', capacity=2)
+e20 = sim.add_edge('K2', 'J13', capacity=2)
 
 # Manual Forwarding Table (A -> C goes through B)
 #sim.assign_routing(1.1, {'def': e1})
@@ -185,8 +227,8 @@ for node in sim.nodes.values():
     print(f"{node.node_addr}:{tab}")
 
 # Run for 10 steps
-#generate_dynamic_gif(sim, steps=20)
-sim.simulate(steps=20)
-sim.publish_results(steps=20)
+generate_dynamic_gif(sim, steps=10)
+#sim.simulate(steps=2)
+sim.publish_results(steps=10)
 
 #print(f"Vehicles arrived at C: {len(sim.nodes[3.1].completed_vehicles)}")
